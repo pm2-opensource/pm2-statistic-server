@@ -57,7 +57,8 @@ function getEntryPoints() {
 //    const fs = require('fs');
 //    let modules = fs.readdirSync(path.resolve(context, 'modules'));
     let result = {
-         app: './index.ts',
+         rest: './bin/rest.ts',
+         server: './bin/server.ts',
     };
 
 //    modules.forEach((module) => result[module] = `./modules/${module}/index.ts`);

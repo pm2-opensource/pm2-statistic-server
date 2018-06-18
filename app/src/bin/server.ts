@@ -1,4 +1,5 @@
 import ActionsPm2 from '@core/const/actions-pm2'
+import Actions from "@core/const/actions";
 
 let axon = require('axon');
 let sock = axon.socket('sub');
@@ -70,7 +71,9 @@ function action() {
     setInterval(function () {
         //console.log('!');
         //"logrotate"
-        sendPM2Command("logrotate", ActionsPm2.ACTION_PM2_RESTART)
+        sendPM2Command("logrotate", ActionsPm2.ACTION_PM2_RESTART);
+        sendCommand("logrotate", Actions.ACTION_PING)
+
 
 
         /*_server.emit('cmd', {
@@ -83,6 +86,7 @@ function action() {
 }
 
 function sendPM2Command(name, action, parameters = {}) {
+    console.log('sendPM2Command: ' + name + ' -> ' + action);
     server.emit('cmd', {
         _type : 'trigger:pm2:action',
         parameters  : {"name": name},
@@ -92,6 +96,7 @@ function sendPM2Command(name, action, parameters = {}) {
 
 
 function sendCommand(processId, action, parameters = {}) {
+    console.log('sendPM2Command: ' + processId + ' -> ' + action);
     server.emit('cmd', {
         _type : 'trigger:action',
         process_id  : processId,
@@ -100,8 +105,8 @@ function sendCommand(processId, action, parameters = {}) {
 }
 
 
-//monitor.
 
 
 server.listen(4322);
 sock.bind(8080);
+action();

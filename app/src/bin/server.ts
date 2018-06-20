@@ -1,12 +1,14 @@
-import ActionsPm2 from '@core/const/actions-pm2'
+import {default as ActionsPm2} from '@core/const/actions-pm2'
 import Actions from "@core/const/actions";
+import Socket = NodeJS.Socket;
 
+let events        = require('events');
 let axon = require('axon');
-let sock = axon.socket('sub');
+let pub_sock = axon.socket('sub');
 let nssocket = require('nssocket');
 
 
-sock.on('message', function(msg){
+pub_sock.on('message', function(msg){
     console.log('---one---');
     let data = JSON.parse(msg);
     if(data.data['axm:reply']) {
@@ -32,47 +34,58 @@ sock.on('message', function(msg){
 });
 
 
+let _socket_list:Socket[] = [];
 
+pub_sock.bind(8080);
 
-let server = nssocket.createServer(function(_socket) {
+function createNsSocketServer(cb) {
+    pub_sock.server.on('connection', function(socket) {
+        _socket_list.push(socket);
+        console.log('Got new connection on pub_sock');
+    });
 
-    console.log('Got new connection [REVERSE INTERACTOR]');
+    let server = new events.EventEmitter();
 
-    server.on('cmd', function(data) {
-        if(_socket.connected) {
-            console.log('Sending command %j', data);
-            _socket.send(data._type, data);
-        } else {
-            console.log('Not found socket');
-        }
+    let listener_server = nssocket.createServer(function(_socket) {
+        server.on('cmd', function(data) {
+            if(_socket.connected) {
+                console.log('Sending command %j', data);
+                _socket.send(data._type, data);
+            } else {
+                console.log('Not found socket');
+            }
+        });
+
+        _socket.data('*', function(data) {
+            this.event.forEach(function(ev) {
+                server.emit(ev, data);
+            });
+
+        });
 
     });
-});
 
-server.on('error', function(e) {
-    console.error('Disconected!');
-    console.error(e);
-});
-//server.once('trigger:action:success', success);
+    listener_server.on('error', function(e) {
+        throw new Error(e);
+    });
 
-server.once('trigger:action:success', function(e) {
-    console.error('trigger:action:success!');
-    console.error(e);
-});
+    listener_server.on('listening', function() {
+        cb(null, server);
+    });
+
+    listener_server.listen(4322, '0.0.0.0');
+}
 
 
-server.on('listening', function() {
-    console.log('Listening start on:4322');
-    //action(null, server);
-});
 
 
 function action() {
-    setInterval(function () {
-        //console.log('!');
+    //sendCommand("my-api-php", Actions.ACTION_MONITOR)
+    setTimeout(function () {
+        //console.log(_socket_list);
         //"logrotate"
-        sendPM2Command("logrotate", ActionsPm2.ACTION_PM2_RESTART);
-        sendCommand("logrotate", Actions.ACTION_PING)
+        //sendPM2Command("my-api-php", ActionsPm2.ACTION_PM2_RESTART);
+        //sendCommand(1, Actions.ACTION_PING)
 
 
 
@@ -81,32 +94,58 @@ function action() {
             process_id : 0,
             action_name : 'ping'
         });*/
-    }, 5000);
+    }, 2000);
 
 }
 
-function sendPM2Command(name, action, parameters = {}) {
-    console.log('sendPM2Command: ' + name + ' -> ' + action);
-    server.emit('cmd', {
-        _type : 'trigger:pm2:action',
-        parameters  : {"name": name},
-        method_name : action
+
+
+
+
+createNsSocketServer((errors, server) => {
+    console.log('NsSocketServer bootstrap done');
+
+    server.on('ask:rep', function(pck) {
+        console.log(pck)
     });
-}
 
-
-function sendCommand(processId, action, parameters = {}) {
-    console.log('sendPM2Command: ' + processId + ' -> ' + action);
-    server.emit('cmd', {
-        _type : 'trigger:action',
-        process_id  : processId,
-        action_name : action
-    });
-}
+    setInterval(() => {
+        //server.emit('cmd', { _type : 'ask' });
+        sendPM2Command("my-api-php", ActionsPm2.ACTION_PM2_RESTART);
+    }, 1000);
 
 
 
 
-server.listen(4322);
-sock.bind(8080);
+
+
+    function sendPM2Command(name, action, parameters = {}) {
+
+        server.once('trigger:pm2:result', function (data) {
+            console.log('trigger:pm2:result');
+            console.log(data);
+        });
+        let status = server.emit('cmd', {
+            _type : 'trigger:pm2:action',
+            parameters  : {"name": name},
+            method_name : action
+        });
+        console.log('sendPM2Command: ' + name + ' -> ' + action + ':' + status);
+
+    }
+
+
+    function sendCommand(processId, action, parameters = {}) {
+
+        let status = server.emit('cmd', {
+            _type : 'trigger:action',
+            process_id  : processId,
+            action_name : action
+        });
+        console.log('sendCommand: ' + processId + ' -> ' + action + ':' + status);
+    }
+
+});
+
+
 action();

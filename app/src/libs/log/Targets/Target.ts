@@ -1,12 +1,9 @@
-import {TargetInterface} from "@libs/log/Interface/TargetInterface";
 import {MessageEntity} from "@libs/log/Entityes/MessageEntity";
 
-export class Target implements TargetInterface {
+export class Target {
     categories: string[] = [];
-    collect: (messages: MessageEntity[]) => boolean;
     enabled: boolean = true;
-    exportInterval: number;
-    messages: MessageEntity[] | null;
+    exportInterval: number = 1000;
+    messages: MessageEntity[] = [];
     prefix: string;
-
 }

@@ -2,20 +2,24 @@ import {LogLevel} from './types';
 import {MessageEntity} from './Entityes/MessageEntity';
 import {ConsoleTarget} from './Targets/ConsoleTraget';
 import {TargetInterface} from './Interface/TargetInterface';
+import {FileTarget} from "@libs/log/Targets/FileTraget";
 
 export class Logger {
 
-    public flushInterval: number = 1000;
+    private flushInterval: number = 1000;
 
-    public traceLevel: number = 0;
+    private traceLevel: number = 0;
 
     private messages: MessageEntity[] = [];
 
     public targets: TargetInterface[] = [];
 
-    public constructor(options: {flushInterval?: number, traceLevel?: number}) {
+    public constructor(options: LoggerConfig) {
+        this.flushInterval = options.flushInterval;
+        this.traceLevel = options.traceLevel;
         // TODO in config!
         this.targets.push(new ConsoleTarget());
+        this.targets.push(new FileTarget());
     }
 
 
@@ -40,4 +44,8 @@ export class Logger {
              }
         });
     }
+}
+export interface LoggerConfig {
+    flushInterval?:number,
+    traceLevel?:number
 }

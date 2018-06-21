@@ -1,6 +1,6 @@
 'use strict';
 
-import * as conf from "@config/app";
+//import * as conf from "@config/app";
 import * as fs from "fs";
 
 const pathCwd: string = <string>process.cwd()+'/.env';
@@ -16,5 +16,5 @@ if (fs.existsSync(pathCwd)) {
     console.log('Loading env file:' + pathCwd);
 }
 
-console.log('Hello '+ conf.base.id +' v'+conf.base.version);
+//console.log('Hello '+ conf.base.id +' v'+conf.base.version);
 console.log('Env: '+ process.env.APP_ENV);
